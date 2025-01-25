@@ -39,4 +39,4 @@ Usage:
 6. Pad and truncate to max length (context length)
 7. Feed to model (each sequence will be processed independently by transformer)
 
-![alt text](image.png)
+![tokenizer](tokenization.png)
