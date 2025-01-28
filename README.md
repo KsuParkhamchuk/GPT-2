@@ -2,8 +2,11 @@
 
 ## Learning materials
 
-[GPT 2 illustrated article](https://jalammar.github.io/illustrated-gpt2/)
-[LLM visualizations](https://bbycroft.net/llm)
+1. [GPT 2 illustrated article](https://jalammar.github.io/illustrated-gpt2/)
+2. [LLM visualizations](https://bbycroft.net/llm)
+3. [Positional encoding](https://medium.com/@hunter-j-phillips/positional-encoding-7a93db4109e6)
+
+---
 
 ## Tokenizer
 
@@ -41,6 +44,8 @@ Inference:
 
 ![tokenizer vizualization](img/tokenization.png)
 
+---
+
 ## Embedding layer
 
 Hyperparameters:
@@ -56,6 +61,14 @@ Hyperparameters:
   GPT-2 medium 1024
   GPT-2 large 1280
   GPT-2 XL 1600
+
+**Positional encoding:**
+
+- each position should have a unique representation
+- tensor is a constant tensor, should be saved with a model
+- sinusoidal positional encoding uses formula:
+
+![sinusoidal positional encoding](img/pe_original.png)
 
 **Training:**
 
@@ -73,4 +86,36 @@ Token embeddings + positional embeddings = input embeddings
 
 ![Embedding layer vizualization](img/embedding.png)
 
+---
+
 ## Q&A
+
+1. When to inherit from nn.Module?
+
+   - when need parameter management
+   - when include other modules with parameters
+
+2. When to use register_buffer?
+
+   - when need to save a constant tensor with a model
+   - when tensor should not receive any gradients during backprop
+
+3. How to get from original position encoding formula:
+
+![alt text](img/pe_original.png)
+
+to adaptation in pytorch:
+
+```positions = torch.arange(CONTEXT_SIZE).unsqueeze(1)
+        div_term = torch.exp(
+            torch.arange(0, EMBEDDING_DIM, 2) * -(torch.log(PE_N) / EMBEDDING_DIM)
+        ).unsqueeze(0)
+
+        pe[:, 0::2] = torch.sin(positions * div_term)
+        pe[:, 1::2] = torch.cos(positions * div_term)
+```
+
+using ![alt text](img/log_rules.png)
+
+apply transformations:
+![alt text](img/pe_transformations.png)
