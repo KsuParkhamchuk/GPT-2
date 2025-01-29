@@ -5,6 +5,7 @@
 1. [GPT 2 illustrated article](https://jalammar.github.io/illustrated-gpt2/)
 2. [LLM visualizations](https://bbycroft.net/llm)
 3. [Positional encoding](https://medium.com/@hunter-j-phillips/positional-encoding-7a93db4109e6)
+4. [Open AI implementation](https://github.com/openai/gpt-2)
 
 ---
 
@@ -85,6 +86,48 @@ Token embeddings + positional embeddings = input embeddings
 4. Truncate or pad input embeddings to context length
 
 ![Embedding layer vizualization](img/embedding.png)
+
+## Attention
+
+** Layer Normalization:**
+
+_Purpose_
+
+- stabilize learning
+- speedup training
+- prevent gradient explosion or vanishing
+
+_Analogue_
+
+Imagine teaching a class of students.
+
+**No Normalization:** Each student's understanding of previous topics is all over the place. Some are way ahead, some are far behind. It's hard to teach new material effectively because you have to constantly adjust to the wildly varying levels of understanding. Some students get overwhelmed (exploding gradients), others get lost and disengaged (vanishing gradients).
+
+**Layer Normalization:** Before teaching each new topic, you give a quick "leveling" exercise to ensure everyone has a roughly similar baseline understanding of the prerequisite concepts. This makes it much easier to teach the new topic effectively and at a faster pace. The students are less likely to get completely lost or overwhelmed, and learning becomes more stable and efficient.
+
+_How it works_
+
+1. Calc the mean:
+
+   Input: [1, 2, 3, 4]
+   Output: m = 2.5
+
+2. Calc standard deviation:
+
+   Input: [1, 2, 3, 4]
+   Output: st_d = 1.118
+
+3. Normalize:
+
+   x_i_norm = (x_i - m) / st_d
+   applying:
+   [1, 2, 3, 4] -> [-1.341, -0.447, 0.447, 1.341]
+
+4. Shift and scale:
+
+   x_i_scaled = x_i_norm \* scale + shift
+   applying:
+   [-1.341, -0.447, 0.447, 1.341] -> [-2.182, -0.394, 1.394, 3.182]
 
 ---
 

@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from hyperpearams import VOCABULARY_SIZE, EMBEDDING_DIM, CONTEXT_SIZE, PE_N
+from hyperparams import VOCABULARY_SIZE, EMBEDDING_DIM, CONTEXT_SIZE, PE_N
 
 
 class TokenEmbeddings(nn.Module):
