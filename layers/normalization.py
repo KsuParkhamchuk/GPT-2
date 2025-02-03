@@ -2,7 +2,7 @@ import torch
 from hyperparams import EMBEDDING_DIM
 
 
-class Normalization:
+class LayerNormalization:
     def __init__(self):
         self.b = torch.zeros(EMBEDDING_DIM)
         self.y = torch.ones(EMBEDDING_DIM)
