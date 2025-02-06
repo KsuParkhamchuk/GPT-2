@@ -1,19 +1,21 @@
-from hyperparams import N_MERGES
+from hyperparams import VOCABULARY_SIZE
 
 sequence = "The join() method in Python is used to concatenate the elements of an iterable (such as a list, tuple, or set) into a single string with a specified delimiter placed between each element. Lets take a simple example to join list of string using join() method."
 
 
 class BPETokenizer:
-    def __init__(self, context_size):
+    def __init__(self, vocab_size, context_size):
         self.special_tokens = [b"<PAD>", b"<UNK>", b"<BOS>", b"<EOS>"]
-        # init base vocabulary
-        self.vocab = {bytes([i]): i for i in range(256)}
-        # update with special tokens
-        self.vocab.update(
-            {token: i + 256 for i, token in enumerate(self.special_tokens)}
-        )
-        self.next_token_id = len(self.vocab)
+        # Create two-way mappings
+        self.token_to_id = {bytes([i]): i for i in range(256)}
+        self.id_to_token = {i: bytes([i]) for i in range(256)}
+        # Add special tokens
+        for i, token in enumerate(self.special_tokens):
+            self.token_to_id[token] = 256 + i
+            self.id_to_token[256 + i] = token
+        self.next_token_id = len(self.token_to_id)
         self.context_size = context_size
+        self.vocab_size = vocab_size
 
     # get all possibile byte pairs from a sequence
     def get_pairs(self, bytes_list):
@@ -26,17 +28,18 @@ class BPETokenizer:
 
     # convert token to its byte representation
     def get_bytes(self, value):
-        if value <= 255:
-            return bytes([value])
-        # If value is a token ID, find its bytes representation in vocab
-        for token_bytes, token_id in self.vocab.items():
-            if token_id == value:
-                return token_bytes
-        raise ValueError(f"Token ID {value} not found in vocabulary")
+        # Direct lookup instead of searching
+        return self.id_to_token.get(value, b"<UNK>")
 
     def update_vocabulary(self, new_pair):
-        new_token = self.get_bytes(new_pair[0]) + self.get_bytes(new_pair[1])
-        self.vocab[new_token] = self.next_token_id
+        # Get byte representations from IDs
+        first_byte = self.id_to_token[new_pair[0]]
+        second_byte = self.id_to_token[new_pair[1]]
+        new_token = first_byte + second_byte
+
+        # Add to both mappings
+        self.token_to_id[new_token] = self.next_token_id
+        self.id_to_token[self.next_token_id] = new_token
         self.next_token_id += 1
 
     def merge(self, bytes_list, frequent_pair, replacement):
@@ -52,21 +55,22 @@ class BPETokenizer:
             else:
                 updated_sequence.append(bytes_list[i])
                 i += 1
-
         return updated_sequence
 
     def pad_sequence(self, tokens):
         n_pads = self.context_size - len(tokens)
-        return tokens + [self.vocab[b"<PAD>"]] * n_pads
+        pad_id = self.token_to_id[b"<PAD>"]
+        return tokens + [pad_id] * n_pads
 
     def clean_sequence(self, sequence):
         pass
 
     def train(self, sequence):
+        n_merges = self.vocab_size - 256
         i = 0
         bytes_list = sequence.encode("utf-8")
 
-        while i < N_MERGES:
+        while i < n_merges:
             pairs = self.get_pairs(bytes_list)
             frequent_pair = max(pairs, key=pairs.get)
             self.update_vocabulary(frequent_pair)
@@ -80,6 +84,7 @@ class BPETokenizer:
         # Keep merging until no more merges possible
         while True:
             pairs = self.get_pairs(tokens)
+            print(pairs)
             if not pairs:
                 break
 
@@ -89,7 +94,7 @@ class BPETokenizer:
             for pair in pairs:
                 # Convert both tokens in pair to their byte representations
                 byte_pair = self.get_bytes(pair[0]) + self.get_bytes(pair[1])
-                token_id = self.vocab.get(byte_pair, None)
+                token_id = self.token_to_id.get(byte_pair, None)
                 if token_id is not None and token_id < min_id:
                     min_id = token_id
                     min_pair = pair
@@ -98,22 +103,12 @@ class BPETokenizer:
                 break
 
             tokens = self.merge(tokens, min_pair, min_id)
-        return tokens
 
-    def decode(self, tokens):
-        return b"".join(self.get_bytes(token) for token in tokens).decode(
-            "utf-8", errors="replace"
-        )
-
-    def forward(self, sequence):
-        tokens = self.encode(sequence=sequence)
         padded_tokens = self.pad_sequence(tokens=tokens)
 
         return padded_tokens
 
-
-# tokenizer = BPETokenizer(30)
-# tokenizer.train(sequence=sequence)
-# print(list(tokenizer.encode("I am swimming")))
-# print(tokenizer.decode(tokenizer.encode("I am swimming")))
-# print(tokenizer.forward("I am swimming"))
+    def decode(self, tokens):
+        return b"".join(self.id_to_token.get(token) for token in tokens).decode(
+            "utf-8", errors="replace"
+        )
