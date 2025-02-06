@@ -1,4 +1,5 @@
-from hyperparams import VOCABULARY_SIZE
+import regex as re
+from hyperparams import GPT4_SPLIT_PATTERN
 
 sequence = "The join() method in Python is used to concatenate the elements of an iterable (such as a list, tuple, or set) into a single string with a specified delimiter placed between each element. Lets take a simple example to join list of string using join() method."
 
@@ -16,10 +17,13 @@ class BPETokenizer:
         self.next_token_id = len(self.token_to_id)
         self.context_size = context_size
         self.vocab_size = vocab_size
+        self.pattern = GPT4_SPLIT_PATTERN
+        self.compiled_pattern = re.compile(self.pattern)
+        self.merges = {}
 
     # get all possibile byte pairs from a sequence
-    def get_pairs(self, bytes_list):
-        counted_pairs = {}
+    def get_pairs(self, bytes_list, counted_pairs=None):
+        counted_pairs = {} if counted_pairs is None else counted_pairs
 
         for pair in zip(bytes_list, bytes_list[1:]):
             counted_pairs[pair] = counted_pairs.get(pair, 0) + 1
@@ -66,43 +70,49 @@ class BPETokenizer:
         pass
 
     def train(self, sequence):
-        n_merges = self.vocab_size - 256
-        i = 0
-        bytes_list = sequence.encode("utf-8")
+        n_merges = self.vocab_size - 259
+        sequence_chunks = re.findall(self.compiled_pattern, sequence)
+        merges = {}
+        encoded_chunks = [list(ch.encode("utf-8")) for ch in sequence_chunks]
 
-        while i < n_merges:
-            pairs = self.get_pairs(bytes_list)
+        for i in range(n_merges):
+            pairs = {}
+
+            for ch in encoded_chunks:
+                self.get_pairs(ch, pairs)
+
             frequent_pair = max(pairs, key=pairs.get)
+            pair_id = 260 + i
             self.update_vocabulary(frequent_pair)
-            bytes_list = self.merge(bytes_list, frequent_pair, self.next_token_id - 1)
-            i += 1
+            merges[frequent_pair] = pair_id
+            encoded_chunks = [
+                self.merge(ch, frequent_pair, pair_id) for ch in encoded_chunks
+            ]
+            print(
+                f"merge {i+1}/{n_merges}: {frequent_pair} -> {pair_id} ({self.id_to_token[pair_id]}) had {pairs[frequent_pair]} occurrences"
+            )
+        self.merges = merges
+
+    def encode_chunk(self, chunk):
+        ids = list(chunk)
+        while len(ids) >= 2:
+            pairs = self.get_pairs(ids)
+            pair = min(pairs, key=lambda p: self.merges.get(p, float("inf")))
+
+            if pair not in self.merges:
+                break
+
+            ids = self.merge(ids, pair, self.merges[pair])
+
+        return ids
 
     def encode(self, sequence):
         # Convert to list of byte token IDs (0-255 initially)
-        tokens = list(sequence.encode("utf-8"))
-
-        # Keep merging until no more merges possible
-        while True:
-            pairs = self.get_pairs(tokens)
-            print(pairs)
-            if not pairs:
-                break
-
-            # Find the first mergeable pair with lowest token ID
-            min_pair = None
-            min_id = float("inf")
-            for pair in pairs:
-                # Convert both tokens in pair to their byte representations
-                byte_pair = self.get_bytes(pair[0]) + self.get_bytes(pair[1])
-                token_id = self.token_to_id.get(byte_pair, None)
-                if token_id is not None and token_id < min_id:
-                    min_id = token_id
-                    min_pair = pair
-
-            if min_pair is None:
-                break
-
-            tokens = self.merge(tokens, min_pair, min_id)
+        sequence_chunks = re.findall(self.compiled_pattern, sequence)
+        encoded_chunks = [ch.encode("utf-8") for ch in sequence_chunks]
+        tokens = []
+        for ch in encoded_chunks:
+            tokens.extend(self.encode_chunk(ch))
 
         padded_tokens = self.pad_sequence(tokens=tokens)
 
