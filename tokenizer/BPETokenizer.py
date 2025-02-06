@@ -1,5 +1,5 @@
 import regex as re
-from hyperparams import GPT4_SPLIT_PATTERN
+from hyperparams import GPT4_SPLIT_PATTERN, BASE_VOCABULARY_SIZE, N_RAW_BYTES
 
 sequence = "The join() method in Python is used to concatenate the elements of an iterable (such as a list, tuple, or set) into a single string with a specified delimiter placed between each element. Lets take a simple example to join list of string using join() method."
 
@@ -8,12 +8,12 @@ class BPETokenizer:
     def __init__(self, vocab_size, context_size):
         self.special_tokens = [b"<PAD>", b"<UNK>", b"<BOS>", b"<EOS>"]
         # Create two-way mappings
-        self.token_to_id = {bytes([i]): i for i in range(256)}
-        self.id_to_token = {i: bytes([i]) for i in range(256)}
+        self.token_to_id = {bytes([i]): i for i in range(N_RAW_BYTES)}
+        self.id_to_token = {i: bytes([i]) for i in range(N_RAW_BYTES)}
         # Add special tokens
         for i, token in enumerate(self.special_tokens):
-            self.token_to_id[token] = 256 + i
-            self.id_to_token[256 + i] = token
+            self.token_to_id[token] = N_RAW_BYTES + i
+            self.id_to_token[N_RAW_BYTES + i] = token
         self.next_token_id = len(self.token_to_id)
         self.context_size = context_size
         self.vocab_size = vocab_size
@@ -70,7 +70,7 @@ class BPETokenizer:
         pass
 
     def train(self, sequence):
-        n_merges = self.vocab_size - 259
+        n_merges = self.vocab_size - BASE_VOCABULARY_SIZE
         sequence_chunks = re.findall(self.compiled_pattern, sequence)
         merges = {}
         encoded_chunks = [list(ch.encode("utf-8")) for ch in sequence_chunks]
@@ -82,7 +82,7 @@ class BPETokenizer:
                 self.get_pairs(ch, pairs)
 
             frequent_pair = max(pairs, key=pairs.get)
-            pair_id = 260 + i
+            pair_id = BASE_VOCABULARY_SIZE + i + 1
             self.update_vocabulary(frequent_pair)
             merges[frequent_pair] = pair_id
             encoded_chunks = [

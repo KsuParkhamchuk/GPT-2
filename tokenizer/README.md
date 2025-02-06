@@ -60,4 +60,18 @@ Inference:
 5. Pad and truncate to max length (context length)
 6. Feed to model (each sequence will be processed independently by transformer)
 
+**With regex:**
+
+This tokenizer is using existing regex from GPT-4
+Such patterns help to separate numbers, empty spaces, punctuation, etc. to avoid unnecessary merges.
+
+Training:
+
+1. Split text into chunks
+2. to utf-8
+3. create pairs inside each chunk
+4. Count pairs through all the chunks
+5. Merge most frequent pair
+6. Repeat until vocabulary size is reached
+
 ![tokenizer vizualization](../img/tokenization.png)
