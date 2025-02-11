@@ -3,6 +3,7 @@
 1. [Neural Machine translation of Rare Words with Subword Units](https://arxiv.org/pdf/1508.07909)
 2. [Byte Pair Encoding is Suboptimal for Language Model Pretraining](https://arxiv.org/pdf/2004.03720)
 3. [GPT-2 tokenizer](https://github.com/openai/gpt-2/blob/master/src/encoder.py)
+4. [Domain-specific tokenization](https://arxiv.org/html/2405.09395v2)
 
 ## Why BPE is used?
 
@@ -75,3 +76,49 @@ Training:
 6. Repeat until vocabulary size is reached
 
 ![tokenizer vizualization](../img/tokenization.png)
+
+## Dataset choice criteria:
+
+- Domain relevance
+  Food recipes + Food facts + workout resources + Pubmed/USDA publications
+- Volume
+
+  _How much compute needed?_
+
+  **Memory**:
+
+  Minimum RAM = 2×corpus_size (holds original + working copy)
+  Real-world overhead: Add 30% for Python/OS processes
+
+- Diversity
+
+## Dataset
+
+**General purpose:** wikitext-103
+Already devided into train, validation, test files
+
+**Domain-specific:**
+
+- Food recipes - RecipeNLG
+- Food facts - OpenFoodFacts
+
+## Experiments
+
+1. Training tokenizer on domain-specific data
+2. Training tokenizer on general data
+3. Training tokenizer on domain-specific data + general data
+
+Idea:
+
+Evaluate the performance of the tokenizer on domain-specific data.
+Efficiency metrics:
+
+- Compression ratio
+- Tokens per word
+- % of unknown tokens
+
+Description:
+
+1.
+
+Results:

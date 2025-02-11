@@ -1,2 +1,5 @@
 .venv/
 __pycache__/
+.DS_Store
+tokenizer/.DS_Store
+tokenizer/datasets/
