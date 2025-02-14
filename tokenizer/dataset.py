@@ -1,10 +1,13 @@
 import pyarrow as pa
-import pandas as pd
+import pyarrow.parquet as pq
+import csv
 import re
 
 
-file_path_1 = "tokenizer/wikitext/train1.arrow"
-file_path_2 = "tokenizer/wikitext/train2.arrow"
+wikitext_file = "tokenizer/datasets/wikitext/train1.arrow"
+recipeNLG_file = "tokenizer/datasets/recipe_ngl.csv"
+foodfacts_file = "tokenizer/datasets/foodfacts.tsv"
+pubmed_sport_file = "tokenizer/datasets/pubmed_sport.parquet"
 
 
 def clean_punctuation_spacing(text: str) -> str:
@@ -47,7 +50,7 @@ def clean_punctuation_spacing(text: str) -> str:
     return text.strip()
 
 
-def clean_data(text):
+def clean_wikitext(text: str) -> str:
     # Remove section markers like "= = Gameplay = =" or "- Valkyria Chronicles III -"
     text = re.sub(r"=\s*=\s*[^=]+\s*=\s*=", "", text)
     text = re.sub(r"(?:(?<=\s)|^)=+\s+([A-Za-z][A-Za-z\s]*?)\s+=+(?=\s|$)", "", text)
@@ -70,17 +73,115 @@ def clean_data(text):
     return text
 
 
-def process_dataset():
+def clean_text(s: str) -> str:
+    # Remove leading/trailing whitespace
+    s = s.strip()
+    # Remove any comma that immediately follows a period, with optional spaces in between.
+    s = re.sub(r"\.\s*,", ".", s)
+    # Normalize multiple spaces to a single space.
+    s = re.sub(r"\s+", " ", s)
+    return s
+
+
+def process_list(list_string: str) -> str:
+    items = re.findall(r'"([^"]+)"', list_string)
+    joined = ", ".join(item.strip() for item in items)
+    return clean_text(joined)
+
+
+def clean_recipengl(text: str) -> str:
+    """
+    Processes the inner list string (without the outer brackets) by extracting items within quotes.
+    Then, joins the items with a comma and a space and cleans the result.
+    """
+    # Regex pattern:
+    #   1. Capture the title (everything before the first '[')
+    #   2. Capture the three bracketed components respectively.
+
+    pattern = r"^(.*?)\[(.*?)\]\[(.*?)\]\[(.*?)\]\s*$"
+    match = re.match(pattern, text)
+    if not match:
+        return text  # or raise an error if the format is unexpected
+
+    title, ingredients_str, instructions_str, labels_str = match.groups()
+
+    # Clean each component:
+    title = clean_text(title)
+    ingredients_sentence = process_list(ingredients_str)
+    instructions_sentence = process_list(instructions_str)
+    labels_sentence = process_list(labels_str)
+
+    # Combine each column into its own line.
+    cleaned_text = (
+        f"{title}\n"
+        f"{ingredients_sentence}\n"
+        f"{instructions_sentence}\n"
+        f"{labels_sentence}"
+    )
+    return cleaned_text
+
+
+def clean_pubmed(text) -> str:
+    # Remove lines that start with a number followed by a dot (e.g. "96. ...")
+    text = re.sub(r"^\d+\.\s.*$", "", text, flags=re.MULTILINE)
+
+    # Remove lines that begin with DOI, PMCID, or PMID (ignoring case)
+    text = re.sub(r"(?i)^(DOI|PMCID|PMID):.*$", "", text, flags=re.MULTILINE)
+
+    # Remove the "Author information:" line (ignoring case)
+    text = re.sub(
+        r"(?si)^Author information:.*?(?=\n\s*\n|$)", "", text, flags=re.MULTILINE
+    )
+
+    # Remove copyright notices, e.g. "© 2021 The Society for the Study of Evolution."
+    text = re.sub(r"©\s*\d{4}\s*[^\n]*", "", text, flags=re.MULTILINE)
+
+    text = text.strip().replace("\n", " ")
+    # Remove extra blank lines created after cleaning
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    cleaned_text = "\n".join(lines)
+
+    return cleaned_text
+
+
+def process_arrow():
     # Read the Arrow file using a memory map for efficiency
-    with pa.memory_map(file_path_1) as source:
-        arrow_table_1 = pa.ipc.open_stream(source).read_all()
+    with pa.memory_map(wikitext_file) as source:
+        arrow_table = pa.ipc.open_stream(source).read_all()
 
-    # with pa.memory_map(file_path_2) as source:
-    #     arrow_table_2 = pa.ipc.open_stream(source).read_all()
+    n_rows_cut = arrow_table.num_rows // 12
+    cut_arrow_table = arrow_table.slice(0, n_rows_cut)
 
-    # combined_table = pa.concat_tables([arrow_table_1, arrow_table_2])
-    df = arrow_table_1.to_pandas()
-    cleaned_texts = df["text"].map(clean_data)
+    content = cut_arrow_table.column("text")
+    content_to_str = "".join(content.to_pylist())
+    cleaned_data = clean_wikitext(content_to_str).encode("utf-8")
 
-    doc_separator = "\n\n<DOC_SEP>\n\n"
-    return doc_separator.join(cleaned_texts)
+    return cleaned_data
+
+
+def process_csv():
+    filters = ["title", "ingredients", "directions", "NER"]
+    filtered_data = ""
+    with open(recipeNLG_file, "r") as source:
+        csv_reader = csv.DictReader(source)
+
+        for row in csv_reader:
+            clean_row = clean_recipengl("".join(row[col] for col in filters))
+            filtered_data.join(clean_row)
+
+    return filtered_data.encode("utf-8")
+
+
+def process_scraped_text():
+
+    with open(pubmed_sport_file, "rb") as source:
+        table = pq.read_table(source)
+
+    content = "".join(item.as_py() for item in table.column("articles"))
+
+    print(content.encode("utf-8"))
+
+    return content.encode("utf-8")
+
+
+process_scraped_text()

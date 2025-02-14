@@ -80,7 +80,7 @@ Training:
 ## Dataset choice criteria:
 
 - Domain relevance
-  Food recipes + Food facts + workout resources + Pubmed/USDA publications
+  Food recipes + Pubmed publications
 - Volume
 
   _How much compute needed?_
@@ -96,21 +96,37 @@ Training:
 
 **General purpose:** wikitext-103
 Already devided into train, validation, test files
+format: arrow
 
 **Domain-specific:**
 
-- Food recipes - RecipeNLG
-- Food facts - OpenFoodFacts
+- RecipeNGL
+  format: csv
+- pubmed
+  format: scraped text, parquet
+  _see the scraping script in the scraping_script.py_
 
 ## Experiments
 
 1. Training tokenizer on domain-specific data
 2. Training tokenizer on general data
-3. Training tokenizer on domain-specific data + general data
+
+50mb if wiki data, 17 merges, 324,6 sec
+
+![alt text](../img/image.png) 3. Training tokenizer on domain-specific data + general data
+
+500mb of wiki data, 17 merges, 6676,73 sec
+
+![alt text](../img/500mb_file_performance.png)
+
+Summary:
+
+smaller dataset is 20x faster
+17 out of 17 merges are the same
 
 Idea:
 
-Evaluate the performance of the tokenizer on domain-specific data.
+Evaluate the performance of the tokenizer on domain-specific data vs general data.
 Efficiency metrics:
 
 - Compression ratio
@@ -119,6 +135,9 @@ Efficiency metrics:
 
 Description:
 
-1.
+1. Init vocabulary - 256 + 2 special tokens
+2. Data is preprocesssed and cleared from redundant information
+3. Regex pattern is the same as for GPT-4 adapted fot a byte sequence
+4. Final vocabulary is saved to vocab.json file
 
 Results:

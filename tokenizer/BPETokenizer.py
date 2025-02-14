@@ -1,12 +1,26 @@
 import regex as re
 from collections import Counter
-from hyperparams import GPT4_SPLIT_PATTERN, BASE_VOCABULARY_SIZE, N_RAW_BYTES
+from hyperparams import (
+    GPT4_SPLIT_PATTERN,
+    BASE_VOCABULARY_SIZE,
+    N_RAW_BYTES,
+    TARGET_VOCABULARY_SIZE,
+)
 import json
 from typing import List, Tuple
+from time import time
 
 
 class BPETokenizer:
-    def __init__(self, vocab_size, context_size):
+    def __init__(self):
+        self.context_size = 1024
+        self.vocab_size = TARGET_VOCABULARY_SIZE
+        self.pattern = GPT4_SPLIT_PATTERN
+        self.compiled_pattern = re.compile(self.pattern)
+        self.unknown_token_id = 257
+        self.pad_token_id = 256
+
+    def init_vocabulary(self):
         self.special_tokens = [b"<PAD>", b"<UNK>"]
         # Create two-way mappings
         self.token_to_id = {bytes([i]): i for i in range(N_RAW_BYTES)}
@@ -17,13 +31,6 @@ class BPETokenizer:
             self.id_to_token[N_RAW_BYTES + i] = token
 
         self.next_token_id = len(self.token_to_id)
-        self.context_size = context_size
-        self.vocab_size = vocab_size
-        self.pattern = GPT4_SPLIT_PATTERN
-        self.compiled_pattern = re.compile(self.pattern)
-        self.merges = {}
-        self.unknown_token_id = 257
-        self.pad_token_id = 256
 
     # get all possibile byte pairs from a sequence
     def get_pairs(
@@ -40,8 +47,9 @@ class BPETokenizer:
         Uses Counter from collections to update the pairs counter
         """
         counted_pairs = Counter() if counted_pairs is None else counted_pairs
-        counted_pairs.update(Counter(zip(bytes_list, bytes_list[1:])))
-
+        for i in range(len(bytes_list) - 1):
+            pair = (bytes_list[i], bytes_list[i + 1])
+            counted_pairs[pair] += 1
         return counted_pairs
 
     # convert token to its byte representation
@@ -89,10 +97,7 @@ class BPETokenizer:
         n = len(bytes_list)
 
         while i < n:
-            if (
-                i + 1 < len(bytes_list)
-                and (bytes_list[i], bytes_list[i + 1]) == frequent_pair
-            ):
+            if i + 1 < n and (bytes_list[i], bytes_list[i + 1]) == frequent_pair:
                 updated_sequence.append(replacement)
                 i += 2
             else:
@@ -127,31 +132,33 @@ class BPETokenizer:
 
         return processed_tokens
 
-    def train(self, sequence: str):
+    def train(self, sequence: bytes):
         """Fill tokenizer vocabulary with n_merges"""
-        n_merges = self.vocab_size - BASE_VOCABULARY_SIZE
-        sequence_chunks = re.findall(self.compiled_pattern, sequence)
+        n_merges = TARGET_VOCABULARY_SIZE - BASE_VOCABULARY_SIZE
+        sequence_chunks = list(re.findall(self.compiled_pattern, sequence))
         merges = {}
-        encoded_chunks = [list(ch.encode("utf-8")) for ch in sequence_chunks]
+        self.init_vocabulary()
 
         for i in range(n_merges):
+            start = time()
             pairs = Counter()
 
-            for ch in encoded_chunks:
+            for ch in sequence_chunks:
                 self.get_pairs(ch, pairs)
 
             frequent_pair = max(pairs, key=pairs.get)
             pair_id = BASE_VOCABULARY_SIZE + i
             self.update_vocabulary(frequent_pair)
             merges[frequent_pair] = pair_id
-            encoded_chunks = [
-                self.merge(ch, frequent_pair, pair_id) for ch in encoded_chunks
+            sequence_chunks = [
+                self.merge(ch, frequent_pair, pair_id) for ch in sequence_chunks
             ]
             print(
                 f"merge {i+1}/{n_merges}: {frequent_pair} -> {pair_id} ({self.id_to_token[pair_id]}) had {pairs[frequent_pair]} occurrences"
             )
+            print(f"time per merge: {time() - start}")
         self.merges = merges
-        self.save_vocab("vocab.json")
+        self.save_vocab("tokenizer/vocab.json")
 
     def encode_chunk(self, chunk: bytes) -> List[int]:
         """
@@ -183,6 +190,7 @@ class BPETokenizer:
         3. Convert each chunk to a sequence of tokens
         4. Extend token sequence with n special token <PAD> - 256 to fill context_size
         """
+        self.read_vocab()
         # Convert to list of byte token IDs (0-255 initially)
         sequence_chunks = re.findall(self.compiled_pattern, sequence)
         encoded_chunks = [ch.encode("utf-8") for ch in sequence_chunks]
@@ -202,6 +210,7 @@ class BPETokenizer:
         2. Decode each token
         3. Raise an Exception if sequence is empty
         """
+        self.read_vocab()
         if len(tokens) == 0:
             raise "Sorry, the generation error occurs"
 
@@ -219,8 +228,16 @@ class BPETokenizer:
             "special_tokens": [list(t) for t in self.special_tokens],
             "vocab_size": self.vocab_size,
             "context_size": self.context_size,
-            "pattern": self.pattern,
         }
 
         with open(file_path, "w") as f:
             json.dump(vocab_data, f, indent=2)
+
+    def read_vocab(self):
+        with open("tokenizer/vocab.json", "r") as vocab_file:
+            data = json.load(vocab_file)
+
+        self.id_to_token = {int(k): bytes(v) for k, v in data["id_to_token"].items()}
+        self.merges = {
+            tuple(map(int, k.split(","))): int(v) for k, v in data["merges"].items()
+        }
