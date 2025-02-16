@@ -137,7 +137,7 @@ Description:
 
 1. Init vocabulary - 256 + 2 special tokens
 2. Data is preprocesssed and cleared from redundant information
-3. Regex pattern is the same as for GPT-4 adapted fot a byte sequence
+3. Regex pattern is the same as for GPT-4 adapted for a byte sequence
 4. Final vocabulary is saved to vocab.json file
 
 Results:

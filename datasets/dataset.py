@@ -2,12 +2,14 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 import csv
 import re
+import torch
+from torch.utils.data import Dataset
+from hyperparams import CONTEXT_SIZE
 
-
-wikitext_file = "tokenizer/datasets/wikitext/train1.arrow"
-recipeNLG_file = "tokenizer/datasets/recipe_ngl.csv"
-foodfacts_file = "tokenizer/datasets/foodfacts.tsv"
-pubmed_sport_file = "tokenizer/datasets/pubmed_sport.parquet"
+wikitext_file = "datasets/wikitext/train1.arrow"
+recipeNLG_file = "datasets/recipe_ngl.csv"
+foodfacts_file = "datasets/foodfacts.tsv"
+pubmed_sport_file = "datasets/pubmed_sport.parquet"
 
 
 def clean_punctuation_spacing(text: str) -> str:
@@ -34,12 +36,12 @@ def clean_punctuation_spacing(text: str) -> str:
 
     # Remove spaces before punctuation marks
     for punct in punctuation_marks:
-        text = re.sub(f"\s+\\{punct}", punct, text)
+        text = re.sub(rf"\s+\{punct}", punct, text)
 
     # Handle opening brackets/quotes (remove space after)
     opening_marks = ["(", "[", "{", '"']
     for punct in opening_marks:
-        text = re.sub(f"\\{punct}\s+", punct, text)
+        text = re.sub(rf"\{punct}\s+", punct, text)
 
     # Ensure single space after punctuation (except for periods in numbers)
     text = re.sub(r"([.,!?:;])\s*(?![0-9])", r"\1 ", text)
@@ -144,12 +146,12 @@ def clean_pubmed(text) -> str:
     return cleaned_text
 
 
-def process_arrow():
+def process_arrow(devider):
     # Read the Arrow file using a memory map for efficiency
     with pa.memory_map(wikitext_file) as source:
         arrow_table = pa.ipc.open_stream(source).read_all()
 
-    n_rows_cut = arrow_table.num_rows // 12
+    n_rows_cut = arrow_table.num_rows // devider
     cut_arrow_table = arrow_table.slice(0, n_rows_cut)
 
     content = cut_arrow_table.column("text")
@@ -184,4 +186,22 @@ def process_scraped_text():
     return content.encode("utf-8")
 
 
-process_scraped_text()
+class TextDataset(Dataset):
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+        self.context_size = CONTEXT_SIZE
+
+        text = process_arrow(1)
+        print(text)
+        self.tokens = self.tokenizer.encode(text)
+        self.total_chunks = len(self.tokens) - CONTEXT_SIZE
+        print(self.tokens)
+
+    # required by torch Dataset to stop iteration
+    def __len__(self):
+        return self.total_chunks
+
+    # required by torch Dataset to get a specific sample of size CONTEXT_SIZE
+    def __getitem__(self, idx):
+        chunk = self.tokens[idx : idx + self.context_size]
+        return torch.tensor(chunk)

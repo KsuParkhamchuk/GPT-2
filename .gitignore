@@ -2,4 +2,6 @@
 __pycache__/
 .DS_Store
 tokenizer/.DS_Store
-tokenizer/datasets/
+datasets/wikitext/
+datasets/pubmed/pubmed_sport.parquet
+datasets/recipe_ngl.csv

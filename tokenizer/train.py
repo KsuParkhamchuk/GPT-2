@@ -1,12 +1,12 @@
 from BPETokenizer import BPETokenizer
-from dataset import process_arrow, process_csv, process_scraped_text
+from datasets import process_arrow, process_csv, process_scraped_text
 from time import time
 from hyperparams import TARGET_VOCABULARY_SIZE
 
 
 def train_general():
     general_tokenizer = BPETokenizer()
-    preprocessed_data = process_arrow()
+    preprocessed_data = process_arrow(12)
     general_tokenizer.train(preprocessed_data)
 
 
@@ -20,7 +20,7 @@ def train_domain_specific():
 
 def __main__():
     start = time()
-    train_domain_specific()
+    train_general()
     print(f"Training took: {time()-start:.2f} seconds")
 
 

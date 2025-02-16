@@ -1,6 +1,6 @@
 import regex as re
 from collections import Counter
-from hyperparams import (
+from tokenizer import (
     GPT4_SPLIT_PATTERN,
     BASE_VOCABULARY_SIZE,
     N_RAW_BYTES,
@@ -120,14 +120,12 @@ class BPETokenizer:
         2. Append <UNK> token if the processed token is not in vocabulary
         """
         processed_tokens = []
-        print(self.id_to_token)
         for token in tokens:
             if token == self.pad_token_id:
                 continue
             elif token in self.id_to_token:
                 processed_tokens.append(token)
             else:
-                print(token)
                 processed_tokens.append(self.unknown_token_id)
 
         return processed_tokens
@@ -157,8 +155,10 @@ class BPETokenizer:
                 f"merge {i+1}/{n_merges}: {frequent_pair} -> {pair_id} ({self.id_to_token[pair_id]}) had {pairs[frequent_pair]} occurrences"
             )
             print(f"time per merge: {time() - start}")
-        self.merges = merges
-        self.save_vocab("tokenizer/vocab.json")
+
+            if i % 10 == 0:
+                self.merges = merges
+                self.save_vocab("tokenizer/vocab.json")
 
     def encode_chunk(self, chunk: bytes) -> List[int]:
         """
@@ -181,7 +181,7 @@ class BPETokenizer:
 
         return ids
 
-    def encode(self, sequence: str) -> List[int]:
+    def encode(self, sequence: bytes) -> List[int]:
         """
         Transforms the whole sequence into tokens by splitting it into chunks and process them separately
 
@@ -193,9 +193,8 @@ class BPETokenizer:
         self.read_vocab()
         # Convert to list of byte token IDs (0-255 initially)
         sequence_chunks = re.findall(self.compiled_pattern, sequence)
-        encoded_chunks = [ch.encode("utf-8") for ch in sequence_chunks]
         tokens = []
-        for ch in encoded_chunks:
+        for ch in sequence_chunks:
             tokens.extend(self.encode_chunk(ch))
 
         padded_tokens = self.pad_sequence(tokens=tokens)
