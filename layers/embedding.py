@@ -57,6 +57,6 @@ class EmbeddingLayer(nn.Module):
         token_emb = self.token_emb(x)
         # works as a look up table, returns needed positions embeddings
         # CONTEXT_SIZE x EMBEDDING_DIM
-        positional_emb = self.positional_emb(token_emb)
+        input_emb = self.positional_emb(token_emb)
 
-        return positional_emb
+        return input_emb

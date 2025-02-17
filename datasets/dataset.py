@@ -190,9 +190,7 @@ class TextDataset(Dataset):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
         self.context_size = CONTEXT_SIZE
-
         text = process_arrow(1)
-        print(text)
         self.tokens = self.tokenizer.encode(text)
         self.total_chunks = len(self.tokens) - CONTEXT_SIZE
         print(self.tokens)

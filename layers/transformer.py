@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from normalization import LayerNormalization
+from .normalization import LayerNormalization
 from hyperparams import EMBEDDING_DIM, CONTEXT_SIZE, ATTENTION_HEADS
 
 

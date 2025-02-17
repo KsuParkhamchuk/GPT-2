@@ -2,7 +2,7 @@ from models.model import GPT2
 from torch import nn
 from torch.optim import AdamW
 from wb.wandb_config import init_wandb, log_wandb
-from tokenizer.BPETokenizer import BPETokenizer
+from tokenizer import BPETokenizer
 from torch.utils.data import DataLoader
 from hyperparams import EPOCH_NUMBER, LEARNING_RATE, BATCH_SIZE
 from datasets import TextDataset
@@ -32,14 +32,16 @@ def train():
             model.train()
 
             logits = model.forward(inputs)
-            loss = criterion(logits)
+            logits = logits.view(
+                -1, logits.size(-1)
+            )  # reshape to [batch_size*sequence_length, vocab_size]
+            target = target.view(-1)
+            loss = criterion(logits, target)
 
+            # loss is a final node of a graph
+            # see details inside experiments/backprop.ipynb
             loss.backward()
 
             optimizer.step()
 
             total_loss += loss.item()
-
-
-tokenizer = BPETokenizer()
-dataset = TextDataset(tokenizer)

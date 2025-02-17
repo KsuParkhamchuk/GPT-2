@@ -1,9 +1,8 @@
-from tokenizer.BPETokenizer import BPETokenizer
 from torch import nn
 from layers.embedding import TokenEmbeddings
-from layers.normalization import LayerNormalization
 from layers.transformer import DecoderBlock
-from ..hyperparams import (
+from layers.normalization import LayerNormalization
+from hyperparams import (
     EMBEDDING_DIM,
     DECODER_BLOCKS,
     VOCABULARY_SIZE,

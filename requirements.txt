@@ -31,3 +31,5 @@ tornado==6.4.2
 traitlets==5.14.3
 wcwidth==0.2.13
 wheel @ file:///opt/homebrew/Cellar/python%403.12/3.12.2_1/libexec/wheel-0.42.0-py3-none-any.whl#sha256=5f1ca525bef7466225922019d72cb06a9e91cd3ff807ddd4be1acb84655e5107
+torch>=2.0.0
+regex>=2023.12.25
