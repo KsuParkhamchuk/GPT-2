@@ -7,6 +7,7 @@ from hyperparams import (
     DECODER_BLOCKS,
     VOCABULARY_SIZE,
 )
+from layers.linear import Linear
 
 
 class GPT2(nn.Module):
@@ -15,7 +16,7 @@ class GPT2(nn.Module):
         super().__init__()
         self.emb_layer = TokenEmbeddings()
         self.layer_norm = LayerNormalization()
-        self.output_proj = nn.Linear(EMBEDDING_DIM, VOCABULARY_SIZE, bias=False)
+        self.output_proj = Linear(EMBEDDING_DIM, VOCABULARY_SIZE, bias=False)
         self.decoder = nn.ModuleList([DecoderBlock() for _ in range(DECODER_BLOCKS)])
 
     def forward(self, tokens):
@@ -25,7 +26,7 @@ class GPT2(nn.Module):
         x = embeddings
         for block in self.decoder:
             x = block(x)
-        transformer_output = self.decoder(x)
-        normalized_output = self.layer_norm.forward(transformer_output)
+
+        normalized_output = self.layer_norm(x)
         logits = self.output_proj(normalized_output)
         return logits

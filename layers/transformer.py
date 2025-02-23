@@ -1,7 +1,8 @@
 import torch
 from torch import nn
 from .normalization import LayerNormalization
-from hyperparams import EMBEDDING_DIM, CONTEXT_SIZE, ATTENTION_HEADS
+from hyperparams import EMBEDDING_DIM, ATTENTION_HEADS
+from linear import Linear
 
 
 class DecoderBlock(nn.Module):
@@ -16,20 +17,28 @@ class DecoderBlock(nn.Module):
         x = x + self.MLP(self.layer_norm(x))
         return x
 
+    def __call__(self, x):
+        return self.forward(x)
+
 
 class Head(nn.Module):
     def __init__(self):
         super().__init__()
-        self.W_q = nn.Linear(EMBEDDING_DIM, EMBEDDING_DIM // ATTENTION_HEADS)
-        self.W_k = nn.Linear(EMBEDDING_DIM, EMBEDDING_DIM // ATTENTION_HEADS)
-        self.W_v = nn.Linear(EMBEDDING_DIM, EMBEDDING_DIM // ATTENTION_HEADS)
+        self.W_q = Linear(EMBEDDING_DIM, EMBEDDING_DIM // ATTENTION_HEADS)
+        self.W_k = Linear(EMBEDDING_DIM, EMBEDDING_DIM // ATTENTION_HEADS)
+        self.W_v = Linear(EMBEDDING_DIM, EMBEDDING_DIM // ATTENTION_HEADS)
 
     def forward(self, x):
         Q = self.W_q(x)
         K = self.W_k(x)
         V = self.W_v(x)
 
-        attn_scores = Q @ K.T / torch.sqrt(EMBEDDING_DIM // ATTENTION_HEADS)
+        # transpose(-2, -1) swaps sequence length dimentions but preserve batch
+        attn_scores = (
+            Q
+            @ K.transpose(-2, -1)
+            / torch.sqrt(torch.tensor(EMBEDDING_DIM // ATTENTION_HEADS))
+        )
         # creates a mask with ones on an upper triangle and 0 on diagonal and below, then convert to bool
         mask = torch.triu(
             torch.ones(attn_scores.size(-2), attn_scores.size(-1)), diagonal=1
@@ -58,9 +67,9 @@ class MultiheadAttention(nn.Module):
 class MLP(nn.Module):
     def __init__(self):
         super().__init__()
-        self.fc_1 = nn.Linear(CONTEXT_SIZE, 4 * EMBEDDING_DIM)
+        self.fc_1 = Linear(EMBEDDING_DIM, 4 * EMBEDDING_DIM)
         self.gelu = nn.GELU()
-        self.proj = nn.Linear(CONTEXT_SIZE, EMBEDDING_DIM)
+        self.proj = Linear(4 * EMBEDDING_DIM, EMBEDDING_DIM)
 
     def forward(self, x):
         fc_1 = self.fc_1(x)

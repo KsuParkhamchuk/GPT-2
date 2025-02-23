@@ -190,10 +190,9 @@ class TextDataset(Dataset):
     def __init__(self, tokenizer):
         self.tokenizer = tokenizer
         self.context_size = CONTEXT_SIZE
-        text = process_arrow(1)
+        text = process_arrow(12)
         self.tokens = self.tokenizer.encode(text)
         self.total_chunks = len(self.tokens) - CONTEXT_SIZE
-        print(self.tokens)
 
     # required by torch Dataset to stop iteration
     def __len__(self):

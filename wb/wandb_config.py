@@ -12,5 +12,9 @@ def init_wandb():
     )
 
 
-def log_wandb(batch_loss):
+def log_batch_loss(batch_loss):
     wandb.log({"batch_loss": batch_loss})
+
+
+def log_lr(lr):
+    wandb.log({"learning rate": lr})

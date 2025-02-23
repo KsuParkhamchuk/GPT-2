@@ -26,3 +26,6 @@ class LayerNormalization:
             normalized_output[i] = row_scaled_and_shifted
 
         return normalized_output
+
+    def __call__(self, x):
+        return self.forward(x)
