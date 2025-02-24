@@ -1,12 +1,11 @@
 from BPETokenizer import BPETokenizer
 from datasets import process_arrow, process_csv, process_scraped_text
 from time import time
-from hyperparams import TARGET_VOCABULARY_SIZE
 
 
 def train_general():
     general_tokenizer = BPETokenizer()
-    preprocessed_data = process_arrow(12)
+    preprocessed_data = process_arrow(12, "datasets/wikitext/train1.arrow")
     general_tokenizer.train(preprocessed_data)
 
 

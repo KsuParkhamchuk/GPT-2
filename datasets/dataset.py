@@ -6,7 +6,6 @@ import torch
 from torch.utils.data import Dataset
 from hyperparams import CONTEXT_SIZE
 
-wikitext_file = "datasets/wikitext/train1.arrow"
 recipeNLG_file = "datasets/recipe_ngl.csv"
 foodfacts_file = "datasets/foodfacts.tsv"
 pubmed_sport_file = "datasets/pubmed_sport.parquet"
@@ -146,9 +145,9 @@ def clean_pubmed(text) -> str:
     return cleaned_text
 
 
-def process_arrow(devider):
+def process_arrow(devider, filepath):
     # Read the Arrow file using a memory map for efficiency
-    with pa.memory_map(wikitext_file) as source:
+    with pa.memory_map(filepath) as source:
         arrow_table = pa.ipc.open_stream(source).read_all()
 
     n_rows_cut = arrow_table.num_rows // devider
@@ -181,16 +180,14 @@ def process_scraped_text():
 
     content = "".join(item.as_py() for item in table.column("articles"))
 
-    print(content.encode("utf-8"))
-
     return content.encode("utf-8")
 
 
 class TextDataset(Dataset):
-    def __init__(self, tokenizer):
+    def __init__(self, tokenizer, filepath):
         self.tokenizer = tokenizer
         self.context_size = CONTEXT_SIZE
-        text = process_arrow(12)
+        text = process_arrow(1, filepath)
         self.tokens = self.tokenizer.encode(text)
         self.total_chunks = len(self.tokens) - CONTEXT_SIZE
 

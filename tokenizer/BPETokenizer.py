@@ -5,6 +5,8 @@ from tokenizer import (
     BASE_VOCABULARY_SIZE,
     N_RAW_BYTES,
     TARGET_VOCABULARY_SIZE,
+    UNKNOWN_TOKEN_ID,
+    PAD_TOKEN_ID,
 )
 import json
 from typing import List, Tuple
@@ -12,13 +14,14 @@ from time import time
 
 
 class BPETokenizer:
+
     def __init__(self):
         self.context_size = 1024
         self.vocab_size = TARGET_VOCABULARY_SIZE
         self.pattern = GPT4_SPLIT_PATTERN
         self.compiled_pattern = re.compile(self.pattern)
-        self.unknown_token_id = 257
-        self.pad_token_id = 256
+        self.unknown_token_id = UNKNOWN_TOKEN_ID
+        self.pad_token_id = PAD_TOKEN_ID
 
     def init_vocabulary(self):
         self.special_tokens = [b"<PAD>", b"<UNK>"]

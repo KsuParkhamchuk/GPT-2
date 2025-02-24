@@ -2,7 +2,7 @@ import torch
 from torch import nn
 from .normalization import LayerNormalization
 from hyperparams import EMBEDDING_DIM, ATTENTION_HEADS
-from linear import Linear
+from .linear import Linear
 
 
 class DecoderBlock(nn.Module):
