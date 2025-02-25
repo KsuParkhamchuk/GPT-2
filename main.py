@@ -1,6 +1,6 @@
 from datasets.dataset import TextDataset
-from tokenizer import BPETokenizer
-from wandb import init_wandb
+from bpe_tokenizer import BPETokenizer
+from wb import init_wandb
 from torch.utils.data import DataLoader
 from hyperparams import BATCH_SIZE, LEARNING_RATE
 from models import GPT2
@@ -25,8 +25,8 @@ def init_datasets(tokenizer):
     return train_dataset, test_dataset, validate_dataset
 
 
-def init_dataloaders():
-    train_dataset, test_dataset, validate_dataset = init_datasets()
+def init_dataloaders(tokenizer):
+    train_dataset, test_dataset, validate_dataset = init_datasets(tokenizer)
     train_dataloader = DataLoader(
         train_dataset,
         batch_size=BATCH_SIZE,
@@ -70,7 +70,8 @@ def main():
     model = init_model()
     optimizer = init_optimizer(model)
     scheduler = init_scheduler(optimizer)
-    train_dataloader, validate_dataloader, test_dataloader = init_dataloaders()
+    tokenizer = init_tokenizer()
+    train_dataloader, validate_dataloader, test_dataloader = init_dataloaders(tokenizer)
 
     trainer = Trainer(
         model=model,
