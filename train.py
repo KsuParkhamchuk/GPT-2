@@ -1,8 +1,14 @@
 import torch
 from torch import nn
-from wb.wandb_config import log_batch_loss, log_lr, log_validation_loss
+from wb.wandb_config import log_param
 from hyperparams import EPOCH_NUMBER
 import traceback
+from tracking_utils import (
+    get_time,
+    calculate_perplexity,
+    get_gradient_metrics,
+    calculate_accuracy,
+)
 
 
 class Trainer:
@@ -29,17 +35,21 @@ class Trainer:
 
             loss = self.criterion(logits, targets)
             val_loss += loss.item()
-            log_validation_loss(val_loss)
+            val_accuracy = calculate_accuracy(logits, targets)
+            log_param("validation accuracy", val_accuracy)
+            log_param("validation loss", val_loss)
 
     @torch.no_grad
     def evaluate(self, dataloader):
         self.model.eval()
         pass
 
-    def train_epoch(self, train_dataloader):
+    def train_epoch(self):
+        start_time = get_time()
         epoch_loss = 0
 
-        for batch in train_dataloader:
+        for batch in self.train_dataloader:
+            batch_start_time = get_time()
             self.optimizer.zero_grad()
             # batch shape: [batch_size, context_size + 1]
             # all tokens except the last one
@@ -49,9 +59,8 @@ class Trainer:
             self.model.train()
 
             logits = self.model.forward(inputs)
-            logits = logits.view(
-                -1, logits.size(-1)
-            )  # reshape to [batch_size*sequence_length, vocab_size]
+            # reshape to [batch_size*sequence_length, vocab_size]
+            logits = logits.view(-1, logits.size(-1))
             # after slicing target sequence is not contiguous anymore
             target = target.contiguous().view(-1)
             loss = self.criterion(logits, target)
@@ -63,8 +72,23 @@ class Trainer:
             self.optimizer.step()
 
             epoch_loss += loss.item()
-            log_batch_loss(loss.item())
-            print(f"Batch loss={loss.item()}")
+
+            batch_finish_time = get_time()
+            grad_metrics = get_gradient_metrics(self.model.parameters())
+            accuracy = calculate_accuracy(logits, target)
+            log_param("accuracy", accuracy)
+            for m_name, m_value in grad_metrics:
+                log_param(m_name, m_value)
+            log_param("batch loss", loss.item())
+            log_param("batch time", batch_finish_time - batch_start_time)
+            log_param("perplexity", calculate_perplexity(loss.item()))
+            print(
+                f"Batch loss={loss.item()}, perplexity={calculate_perplexity(loss.item())}, batch time={batch_finish_time - batch_start_time}"
+            )
+
+        finish_time = get_time()
+        log_param("epoch duration", finish_time - start_time)
+        log_param("epoch loss", epoch_loss)
 
         return epoch_loss
 
@@ -75,18 +99,15 @@ class Trainer:
             for epoch in range(EPOCH_NUMBER):
                 current_lr = self.optimizer.param_groups[0]["lr"]
 
-                epoch_loss = self.train_epoch(self.dataloader)
+                epoch_loss = self.train_epoch()
                 total_loss += epoch_loss
                 print(
                     f"Epoch = {epoch}, epoch_loss = {epoch_loss}, total_loss = {total_loss}"
                 )
 
-                log_lr(current_lr)
+                log_param("learning rate", current_lr)
                 self.scheduler.step()
                 self.validate()
         except Exception as e:
             print(f"Error during training: {e}")
             traceback.print_exc()
-        finally:
-            # Force cleanup of workers
-            self.dataloader._iterator = None

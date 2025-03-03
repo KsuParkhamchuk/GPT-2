@@ -54,13 +54,16 @@ class Head(nn.Module):
 class MultiheadAttention(nn.Module):
     def __init__(self):
         super().__init__()
+        self.heads = nn.ModuleList([Head() for _ in range(ATTENTION_HEADS)])
+        self.proj_weights = Linear(EMBEDDING_DIM, EMBEDDING_DIM)
 
     def forward(self, x):
         heads_outputs = []
-        for _ in range(ATTENTION_HEADS):
-            heads_outputs.append(Head().forward(x))
+        for head in self.heads:
+            heads_outputs.append(head.forward(x))
 
         attn_res = torch.cat(heads_outputs, dim=-1)
+        attn_res = self.proj_weights(attn_res)
         return attn_res
 
 

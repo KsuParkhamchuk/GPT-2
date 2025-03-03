@@ -12,13 +12,5 @@ def init_wandb():
     )
 
 
-def log_batch_loss(batch_loss):
-    wandb.log({"batch_loss": batch_loss})
-
-
-def log_lr(lr):
-    wandb.log({"learning_rate": lr})
-
-
-def log_validation_loss(val_loss):
-    wandb.log({"validation_loss": val_loss})
+def log_param(title, value):
+    wandb.log({f"{title}": value})

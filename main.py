@@ -19,7 +19,7 @@ def init_tokenizer():
 
 def init_datasets(tokenizer):
     train_dataset = TextDataset(tokenizer, wikitext_file)
-    test_dataset = TextDataset(tokenizer, wikitext_file)
+    test_dataset = TextDataset(tokenizer, wikitext_test)
     validate_dataset = TextDataset(tokenizer, wikitext_validate)
 
     return train_dataset, test_dataset, validate_dataset
@@ -50,6 +50,15 @@ def init_dataloaders(tokenizer):
     )
 
     return train_dataloader, test_dataloader, validate_dataloader
+
+
+# Clean up dataloaders resources to avoid memory leak
+def cleanup_dataloaders(dataloaders):
+
+    for dataloader in dataloaders:
+        # Close the workers to avoid memory leaks
+        dataloader._iterator = None
+        dataloader.dataset = None
 
 
 def init_optimizer(model):
@@ -83,6 +92,8 @@ def main():
 
     trainer.train()
     trainer.evaluate(test_dataloader)
+
+    cleanup_dataloaders([train_dataloader, test_dataloader, validate_dataloader])
 
 
 if __name__ == "__main__":
