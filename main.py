@@ -14,7 +14,7 @@ wikitext_validate = "datasets/wikitext/validate.arrow"
 
 
 def init_tokenizer():
-    return BPETokenizer()
+    return BPETokenizer("general")
 
 
 def init_datasets(tokenizer):
@@ -58,7 +58,6 @@ def cleanup_dataloaders(dataloaders):
     for dataloader in dataloaders:
         # Close the workers to avoid memory leaks
         dataloader._iterator = None
-        dataloader.dataset = None
 
 
 def init_optimizer(model):

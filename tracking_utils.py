@@ -41,7 +41,7 @@ def get_gradient_metrics(parameters):
             non_zero_grads.append(non_zero_flat_grad.min().item())
 
     # Calculate final L2 norm
-    grad_norm = torch.sqrt(total_squared_norm)
+    grad_norm = torch.sqrt(torch.tensor(total_squared_norm))
 
     # Get min non-zero gradient
     min_grad = min(non_zero_grads) if non_zero_grads else 0

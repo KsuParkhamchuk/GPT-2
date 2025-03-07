@@ -27,11 +27,18 @@ class Trainer:
         val_loss = 0
 
         for batch in self.val_dataloader:
-            batch.to(self.device)
-            inputs, targets = batch[:, :-1], batch[:, 1:]
+            # Move batch to device
+            input_ids = batch["input_ids"].to(self.device)
+            attention_mask = batch["attention_mask"].to(self.device)
+            labels = batch["labels"].to(self.device)
+
+            # For validation, same pattern as training
+            inputs = input_ids[:, :-1]
+            targets = labels[:, 1:]
+
             logits = self.model(inputs)
-            logits.view(-1, logits.size(-1))
-            targets = targets.view(-1)
+            logits = logits.view(-1, logits.size(-1))
+            targets = targets.contiguous().view(-1)
 
             loss = self.criterion(logits, targets)
             val_loss += loss.item()
@@ -51,11 +58,18 @@ class Trainer:
         for batch in self.train_dataloader:
             batch_start_time = get_time()
             self.optimizer.zero_grad()
-            # batch shape: [batch_size, context_size + 1]
-            # all tokens except the last one
-            inputs = batch[:, :-1]
-            # all tokens except the first one
-            target = batch[:, 1:]
+
+            # Move batch to device
+            input_ids = batch["input_ids"].to(self.device)
+            attention_mask = batch["attention_mask"].to(self.device)
+            labels = batch["labels"].to(self.device)
+
+            # For causal language modeling, inputs are all tokens except the last one
+            # and targets are all tokens except the first one
+            inputs = input_ids[:, :-1]
+            target = labels[:, 1:]
+            attention_mask = attention_mask[:, :-1]  # Adjust mask accordingly
+
             self.model.train()
 
             logits = self.model.forward(inputs)
@@ -65,10 +79,7 @@ class Trainer:
             target = target.contiguous().view(-1)
             loss = self.criterion(logits, target)
 
-            # loss is a final node of a graph
-            # see details inside experiments/backprop.ipynb
             loss.backward()
-
             self.optimizer.step()
 
             epoch_loss += loss.item()
@@ -77,7 +88,7 @@ class Trainer:
             grad_metrics = get_gradient_metrics(self.model.parameters())
             accuracy = calculate_accuracy(logits, target)
             log_param("accuracy", accuracy)
-            for m_name, m_value in grad_metrics:
+            for m_name, m_value in grad_metrics.items():
                 log_param(m_name, m_value)
             log_param("batch loss", loss.item())
             log_param("batch time", batch_finish_time - batch_start_time)
