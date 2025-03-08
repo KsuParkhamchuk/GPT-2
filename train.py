@@ -27,15 +27,8 @@ class Trainer:
         val_loss = 0
 
         for batch in self.val_dataloader:
-            # Move batch to device
-            input_ids = batch["input_ids"].to(self.device)
-            attention_mask = batch["attention_mask"].to(self.device)
-            labels = batch["labels"].to(self.device)
-
-            # For validation, same pattern as training
-            inputs = input_ids[:, :-1]
-            targets = labels[:, 1:]
-
+            batch = batch.to(self.device)
+            inputs, targets = batch[:, :-1], batch[:, 1:]
             logits = self.model(inputs)
             logits = logits.view(-1, logits.size(-1))
             targets = targets.contiguous().view(-1)
@@ -46,7 +39,7 @@ class Trainer:
             log_param("validation accuracy", val_accuracy)
             log_param("validation loss", val_loss)
 
-    @torch.no_grad
+    @torch.no_grad()
     def evaluate(self, dataloader):
         self.model.eval()
         pass
@@ -58,18 +51,12 @@ class Trainer:
         for batch in self.train_dataloader:
             batch_start_time = get_time()
             self.optimizer.zero_grad()
-
             # Move batch to device
-            input_ids = batch["input_ids"].to(self.device)
-            attention_mask = batch["attention_mask"].to(self.device)
-            labels = batch["labels"].to(self.device)
-
-            # For causal language modeling, inputs are all tokens except the last one
-            # and targets are all tokens except the first one
-            inputs = input_ids[:, :-1]
-            target = labels[:, 1:]
-            attention_mask = attention_mask[:, :-1]  # Adjust mask accordingly
-
+            batch = batch.to(self.device)
+            # all tokens except the last one
+            inputs = batch[:, :-1]
+            # all tokens except the first one
+            target = batch[:, 1:]
             self.model.train()
 
             logits = self.model.forward(inputs)
@@ -79,7 +66,10 @@ class Trainer:
             target = target.contiguous().view(-1)
             loss = self.criterion(logits, target)
 
+            # loss is a final node of a graph
+            # see details inside experiments/backprop.ipynb
             loss.backward()
+
             self.optimizer.step()
 
             epoch_loss += loss.item()

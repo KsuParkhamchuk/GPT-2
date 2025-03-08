@@ -5,6 +5,7 @@ CONTEXT_SIZE = 1024
 PE_N = 8879
 DECODER_BLOCKS = 12
 ATTENTION_HEADS = 12
+HEAD_DIM = EMBEDDING_DIM // ATTENTION_HEADS
 
 # train
 EPOCH_NUMBER = 100
@@ -17,5 +18,5 @@ EPOCH_NUMBER = 100
 # 3. ReduceLROnPlateau - reduces lr when the progress stops
 # 4. CosineAnnealingLR - popular in computer vision tasks, good default
 # 5. StepLR - simple step decay
-LEARNING_RATE = 0.001
-BATCH_SIZE = 32
+LEARNING_RATE = 0.0001
+BATCH_SIZE = 8

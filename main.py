@@ -62,7 +62,7 @@ def cleanup_dataloaders(dataloaders):
 
 def init_optimizer(model):
     # parameters are automatically tracked by nn.Module, otherwise should be registered through nn.Parameter
-    return AdamW(model.parameters(), lr=LEARNING_RATE)
+    return AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.01)
 
 
 def init_scheduler(optimizer):
