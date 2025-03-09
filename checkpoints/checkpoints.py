@@ -1,22 +1,28 @@
 import torch
 
 
-def save_checkpoint(state, filename):
-    tmp_path = filename + ".tmp"
-    torch.save(state, tmp_path)
-    print(f"Checkpoint saved to {filename}")
+def save_checkpoint(model, optimizer, epoch, batch, loss):
+    checkpoint = {
+        "epoch": epoch,
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "loss": loss,
+        "batch": batch,
+    }
+
+    torch.save(checkpoint, f"checkpoints/model_checkpoint_epoch_{epoch}.pt")
+    print(f"Checkpoint saved at epoch = {epoch}, batch = {batch}")
 
 
-def verify_checkpoint(state):
-    required_keys = {"model", "optimizer", "step", "config"}
-    return all(k in state for k in required_keys)
-
-
-def load_checkpoint(path):
+def load_checkpoint(model, optimizer, checkpoint_path):
     try:
-        state = torch.load(path, map_location="cpu")
-        if verify_checkpoint(state):
-            return state
+        checkpoint = torch.load(checkpoint_path)
+        model.load_state_dict(checkpoint["model_state_dict"])
+        optimizer.load_state_dict(checkpoint["optimizer_state-dict"])
+        epoch = checkpoint["epoch"]
+        batch = checkpoint["batch"]
+        return model, optimizer, epoch, batch
     except Exception as e:
-        print(f"Checkpoint load failed: {e}")
+        print(f"Fail to load checkpoint {checkpoint_path}, exception: {e}")
+
     return None

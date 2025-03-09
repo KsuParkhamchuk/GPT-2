@@ -32,6 +32,8 @@ def init_dataloaders(tokenizer):
         batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=2,
+        pin_memory=True,
+        prefetch_factor=2,
         persistent_workers=True,
     )
     test_dataloader = DataLoader(
@@ -39,6 +41,8 @@ def init_dataloaders(tokenizer):
         batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=2,
+        pin_memory=True,
+        prefetch_factor=2,
         persistent_workers=True,
     )
     validate_dataloader = DataLoader(
@@ -46,6 +50,8 @@ def init_dataloaders(tokenizer):
         batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=2,
+        pin_memory=True,
+        prefetch_factor=2,
         persistent_workers=True,
     )
 

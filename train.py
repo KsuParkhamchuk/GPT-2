@@ -9,13 +9,14 @@ from tracking_utils import (
     get_gradient_metrics,
     calculate_accuracy,
 )
+from checkpoints import save_checkpoint, load_checkpoint
 
 
 class Trainer:
     def __init__(self, model, optimizer, scheduler, train_dataloader, val_dataloader):
         self.optimizer = optimizer
         self.scheduler = scheduler
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "mps" if torch.backends.mps.is_available() else "cpu"
         self.model = model.to(self.device)
         self.criterion = nn.CrossEntropyLoss()
         self.train_dataloader = train_dataloader
@@ -44,11 +45,11 @@ class Trainer:
         self.model.eval()
         pass
 
-    def train_epoch(self):
+    def train_epoch(self, epoch):
         start_time = get_time()
         epoch_loss = 0
 
-        for batch in self.train_dataloader:
+        for batch_idx, batch in enumerate(self.train_dataloader):
             batch_start_time = get_time()
             self.optimizer.zero_grad()
             # Move batch to device
@@ -73,6 +74,15 @@ class Trainer:
             self.optimizer.step()
 
             epoch_loss += loss.item()
+
+            if batch_idx % 100 == 0:
+                save_checkpoint(
+                    model=self.model,
+                    optimizer=self.optimizer,
+                    epoch=epoch,
+                    batch=batch_idx,
+                    loss=epoch_loss,
+                )
 
             batch_finish_time = get_time()
             grad_metrics = get_gradient_metrics(self.model.parameters())
@@ -100,7 +110,7 @@ class Trainer:
             for epoch in range(EPOCH_NUMBER):
                 current_lr = self.optimizer.param_groups[0]["lr"]
 
-                epoch_loss = self.train_epoch()
+                epoch_loss = self.train_epoch(epoch)
                 total_loss += epoch_loss
                 print(
                     f"Epoch = {epoch}, epoch_loss = {epoch_loss}, total_loss = {total_loss}"

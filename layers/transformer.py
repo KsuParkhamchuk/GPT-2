@@ -42,7 +42,8 @@ class Head(nn.Module):
         attn_scores = Q @ K.transpose(-2, -1) / torch.sqrt(torch.tensor(HEAD_DIM))
         # creates a mask with ones on an upper triangle and 0 on diagonal and below, then convert to bool
         mask = torch.triu(
-            torch.ones(attn_scores.size(-2), attn_scores.size(-1)), diagonal=1
+            torch.ones(attn_scores.size(-2), attn_scores.size(-1), device=x.device),
+            diagonal=1,
         ).bool()
         # replaces positions where mask=True with -inf
         masked_scores = attn_scores.masked_fill(mask, float("-inf"))

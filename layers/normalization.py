@@ -11,8 +11,14 @@ class LayerNormalization(nn.Module):
         self.beta = nn.Parameter(torch.zeros(dim))
         self.eps = eps
 
+    # x- mean - substructing the mean centers the distribution around zero
+    # var - variance - how much our data varies from the average
+    # mean and variance are calculated per token under the hood of mean and var methods
+    # normalization is applied element-wise
     def forward(self, x):
+        # shape [SEQUENCE_LENGTH, 1]
         mean = x.mean(dim=-1, keepdim=True)
+        # shape [SEQUENCE_LENGTH, 1]
         var = x.var(dim=-1, unbiased=False, keepdim=True)
         x_norm = (x - mean) / torch.sqrt(var + self.eps)
         return self.gamma * x_norm + self.beta
