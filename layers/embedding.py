@@ -22,11 +22,12 @@ class PositionalEmbedding(nn.Module):
         pe = torch.zeros(CONTEXT_SIZE, EMBEDDING_DIM)
         # CONTEXT_SIZE x 1
         positions = torch.arange(CONTEXT_SIZE).unsqueeze(1)
-        # formula: e in power of -2i*ln(n)/EMBEDDING_DIMENTIONS
+        # formula: e in power of -2i*ln(n)/EMBEDDING_DIMENTION
         # torch.arange created sequeance like [0, 2 , 4 ... ] = 2i
         # EMBEDDING_DIM/2 x 1
         div_term = torch.exp(
-            torch.arange(0, EMBEDDING_DIM, 2) * -(torch.log(PE_N) / EMBEDDING_DIM)
+            torch.arange(0, EMBEDDING_DIM, 2)
+            * -(torch.log(torch.tensor(PE_N)) / EMBEDDING_DIM)
         ).unsqueeze(0)
         # fill each even value
         # syntax like : - take all rows, 0::2 - take columns from 0 to
@@ -41,7 +42,7 @@ class PositionalEmbedding(nn.Module):
 
     def forward(self, x):
         # take all rows and all columns from 0 to x second dimention which is CONTEXT_SIZE
-        return x + self.pe[:, : x.size(1)]
+        return x + self.pe[: x.size(1), :]
 
 
 class EmbeddingLayer(nn.Module):

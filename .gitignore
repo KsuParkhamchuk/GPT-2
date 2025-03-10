@@ -5,3 +5,4 @@ tokenizer/.DS_Store
 datasets/wikitext/
 datasets/pubmed/pubmed_sport.parquet
 datasets/recipe_ngl.csv
+wandb/

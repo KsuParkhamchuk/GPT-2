@@ -1,5 +1,5 @@
 from torch import nn
-from layers.embedding import TokenEmbeddings
+from layers.embedding import EmbeddingLayer
 from layers.transformer import DecoderBlock
 from layers.normalization import LayerNormalization
 from hyperparams import (
@@ -14,13 +14,14 @@ class GPT2(nn.Module):
 
     def __init__(self):
         super().__init__()
-        self.emb_layer = TokenEmbeddings()
+        self.emb_layer = EmbeddingLayer()
         self.layer_norm = LayerNormalization()
         self.output_proj = Linear(EMBEDDING_DIM, VOCABULARY_SIZE, bias=False)
         self.decoder = nn.ModuleList([DecoderBlock() for _ in range(DECODER_BLOCKS)])
 
     def forward(self, tokens):
         # embeddings
+        # [BATCH_SIZE x CONTEXT_SIZE x EMBEDDING_DIM]
         embeddings = self.emb_layer.forward(tokens)
         # transformer : multi-head attention, projections, MLP, attention residual
         x = embeddings

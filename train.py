@@ -53,10 +53,13 @@ class Trainer:
             batch_start_time = get_time()
             self.optimizer.zero_grad()
             # Move batch to device
+            # [BATCH_SIZE x CONTEXT_SIZE]
             batch = batch.to(self.device)
             # all tokens except the last one
+            # [BATCH_SIZE, CONTEXT_SIZE -1]
             inputs = batch[:, :-1]
             # all tokens except the first one
+            # [BATCH_SIZE, CONTEXT_SIZE -1]
             target = batch[:, 1:]
             self.model.train()
 
