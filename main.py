@@ -2,11 +2,11 @@ from datasets.dataset import TextDataset
 from bpe_tokenizer import BPETokenizer
 from wb import init_wandb
 from torch.utils.data import DataLoader
-from hyperparams import BATCH_SIZE, LEARNING_RATE
-from models import GPT2
+from model import BATCH_SIZE, LEARNING_RATE
+from model import GPT2
 from torch.optim import AdamW
 from torch.optim.lr_scheduler import StepLR
-from train import Trainer
+from model import Trainer
 
 wikitext_file = "datasets/wikitext/train1.arrow"
 wikitext_test = "datasets/wikitext/test.arrow"

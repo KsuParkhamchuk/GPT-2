@@ -1,7 +1,7 @@
 from torch import nn
 from layers.embedding import EmbeddingLayer
 from layers.transformer import DecoderBlock
-from layers.normalization import LayerNormalization
+from layers.normalization import NormalizationLayer
 from hyperparams import (
     EMBEDDING_DIM,
     DECODER_BLOCKS,
@@ -15,7 +15,7 @@ class GPT2(nn.Module):
     def __init__(self):
         super().__init__()
         self.emb_layer = EmbeddingLayer()
-        self.layer_norm = LayerNormalization()
+        self.layer_norm = NormalizationLayer()
         self.output_proj = Linear(EMBEDDING_DIM, VOCABULARY_SIZE, bias=False)
         self.decoder = nn.ModuleList([DecoderBlock() for _ in range(DECODER_BLOCKS)])
 
@@ -28,6 +28,8 @@ class GPT2(nn.Module):
         for block in self.decoder:
             x = block(x)
 
+        # [BATCH_SIZE x CONTEXT_SIZE x EMBEDDING_DIM]
         normalized_output = self.layer_norm(x)
+        # [BATCH_SIZE x CONTEXT_SIZE x VOCAB_SIZE]
         logits = self.output_proj(normalized_output)
         return logits

@@ -63,8 +63,9 @@ class Trainer:
             target = batch[:, 1:]
             self.model.train()
 
+            # [BATCH_SIZE, CONTEXT_SIZE - 1, VOCAB_SIZE]
             logits = self.model.forward(inputs)
-            # reshape to [batch_size*sequence_length, vocab_size]
+            # reshape to [BATCH_SIZE*(CONTEXT_SIZE-1), VOCAB_SIZE]
             logits = logits.view(-1, logits.size(-1))
             # after slicing target sequence is not contiguous anymore
             target = target.contiguous().view(-1)

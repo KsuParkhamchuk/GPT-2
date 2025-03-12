@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from .normalization import LayerNormalization
+from .normalization import NormalizationLayer
 from hyperparams import EMBEDDING_DIM, ATTENTION_HEADS, HEAD_DIM
 from .linear import Linear
 
@@ -10,11 +10,12 @@ class DecoderBlock(nn.Module):
         super().__init__()
         self.self_attention = MultiheadAttention()
         self.MLP = MLP()
-        self.layer_norm = LayerNormalization()
+        self.attn_layer_norm = NormalizationLayer()
+        self.mlp_layer_norm = NormalizationLayer()
 
     def forward(self, x):
-        x = x + self.self_attention(self.layer_norm(x))
-        x = x + self.MLP(self.layer_norm(x))
+        x = x + self.self_attention(self.attn_layer_norm(x))
+        x = x + self.MLP(self.mlp_layer_norm(x))
         return x
 
     def __call__(self, x):
@@ -34,11 +35,13 @@ class Head(nn.Module):
         self.W_v.weights.data.normal_(mean=0.0, std=0.02)
 
     def forward(self, x):
+        # [BATCH_SIZE, CONTEXT_SIZE, HEAD_DIM]
         Q = self.W_q(x)
         K = self.W_k(x)
         V = self.W_v(x)
 
         # transpose(-2, -1) swaps sequence length dimentions but preserve batch
+        # [BATCH_SIZE, CONTEXT_SIZE, CONTEXT_SIZE]
         attn_scores = Q @ K.transpose(-2, -1) / torch.sqrt(torch.tensor(HEAD_DIM))
         # creates a mask with ones on an upper triangle and 0 on diagonal and below, then convert to bool
         mask = torch.triu(
@@ -49,6 +52,7 @@ class Head(nn.Module):
         masked_scores = attn_scores.masked_fill(mask, float("-inf"))
         # compute softmax with last dimension
         attn_weights = torch.softmax(masked_scores, dim=-1)
+        # [Batch_SIZE, CONTEXT_SIZE, HEAD_DIM]
         output = attn_weights @ V
         return output
 
