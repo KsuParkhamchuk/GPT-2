@@ -6,3 +6,4 @@ datasets/wikitext/
 datasets/pubmed/pubmed_sport.parquet
 datasets/recipe_ngl.csv
 wandb/
+.qodo

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from hyperparams import EMBEDDING_DIM
+from model.hyperparams import EMBEDDING_DIM
 
 
 class NormalizationLayer(nn.Module):

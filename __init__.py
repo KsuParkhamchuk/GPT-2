@@ -1,4 +1,4 @@
-from hyperparams import (
+from model.hyperparams import (
     VOCABULARY_SIZE,
     DECODER_BLOCKS,
     EMBEDDING_DIM,

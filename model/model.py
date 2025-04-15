@@ -2,7 +2,7 @@ from torch import nn
 from layers.embedding import EmbeddingLayer
 from layers.transformer import DecoderBlock
 from layers.normalization import NormalizationLayer
-from hyperparams import (
+from model.hyperparams import (
     EMBEDDING_DIM,
     DECODER_BLOCKS,
     VOCABULARY_SIZE,

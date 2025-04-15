@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-from hyperparams import VOCABULARY_SIZE, EMBEDDING_DIM, CONTEXT_SIZE, PE_N
+from model.hyperparams import VOCABULARY_SIZE, EMBEDDING_DIM, CONTEXT_SIZE, PE_N
 
 
 class TokenEmbeddings(nn.Module):
@@ -54,10 +54,10 @@ class EmbeddingLayer(nn.Module):
 
     def forward(self, x):
         # works as a look up table, returns the needed token embeddings
-        # CONTEXT_SIZE x EMBEDDING_DIM
+        # BATCH_SIZE x CONTEXT_SIZE x EMBEDDING_DIM
         token_emb = self.token_emb(x)
         # works as a look up table, returns needed positions embeddings
-        # CONTEXT_SIZE x EMBEDDING_DIM
+        # BATCH_SIZE x CONTEXT_SIZE x EMBEDDING_DIM
         input_emb = self.positional_emb(token_emb)
 
         return input_emb

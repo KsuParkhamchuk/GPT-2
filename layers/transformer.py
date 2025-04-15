@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from .normalization import NormalizationLayer
-from hyperparams import EMBEDDING_DIM, ATTENTION_HEADS, HEAD_DIM
+from model.hyperparams import EMBEDDING_DIM, ATTENTION_HEADS, HEAD_DIM
 from .linear import Linear
 
 

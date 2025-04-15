@@ -1,9 +1,9 @@
 import torch
 from torch import nn
 from wb.wandb_config import log_param
-from hyperparams import EPOCH_NUMBER
+from model.hyperparams import EPOCH_NUMBER
 import traceback
-from tracking_utils import (
+from model.tracking_utils import (
     get_time,
     calculate_perplexity,
     get_gradient_metrics,

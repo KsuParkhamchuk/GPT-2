@@ -2,7 +2,7 @@ import pyarrow as pa
 import re
 import torch
 from torch.utils.data import Dataset
-from hyperparams import CONTEXT_SIZE
+from model.hyperparams import CONTEXT_SIZE
 
 
 def clean_punctuation_spacing(text: str) -> str:
