@@ -7,7 +7,7 @@ It is a learning resource for understanding the inner workings of the model.
 
 - [Concepts](./concepts) - Jupyter notebooks with visualizations and explanations of the concepts
 
-  - [Positional encoding](./concepts/positional_encoding.ipynb)
+  - [Positional encoding](./concepts/positional_encoding.ipynb) +
   - [Backpropagation](./concepts/backprop.ipynb)
   - [Cross-entropy](./concepts/cross_entropy.ipynb)
   - [Optimizers](./concepts/optimizers.ipynb)
@@ -17,6 +17,9 @@ It is a learning resource for understanding the inner workings of the model.
   - [Transformer](./layers/transformer.py)
   - [Linear](./layers/linear.py)
   - [Normalization](./layers/normalization.py)
+  - [Optimizations](./layers/optimizations)
+    - [RoPE Implementation](./layers/optimizations/RoPE.py)
+    - [KV Cache Implementation](./layers/optimizations/KVCache.py)
 - [Model](./model) - The main model implementation
 - [Train](./train) - Training loop implementation
 - [Checkpoints](./checkpoints) - Checkpoint for the model

@@ -158,6 +158,7 @@ Each new neuron is an additional feature
 
 - when need to save a constant tensor with a model
 - when tensor should not receive any gradients during backprop
+- the variable will be automatically moved to the device with a model
 
 **3. How to get from original position encoding formula:**
 
@@ -218,3 +219,7 @@ ReLU = max(0, x) - 0 instead of negative values or zero
 
 They have different representation spaces.
 Input embeddings capture general semantic information while V matrix represents it's meaning optimized for the current layer attention operation. V transormation allows to extract different aspects of the same token.
+
+**9. How mask is applied during inference if there are no future tokens?**
+
+**10. What is a meaning of dot product and matmul in attention?**

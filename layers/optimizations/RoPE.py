@@ -15,12 +15,12 @@ class ROPEAttnHead(nn.Module):
         # Shape: (HEAD_DIM // 2)
         freqs = 1 / (10000 ** torch.arange(0, HEAD_DIM, 2) / HEAD_DIM)
 
-        # Shape: (CONTEXT_SIZE)
+        # Shape: (SEQ_LEN)
         positions = torch.arange(CONTEXT_SIZE)
-        # (CONTEXT_SIZE, HEAD_DIM // 2) = (CONTEXT_SIZE, 1) * (1, HEAD_DIM // 2)
+        # (SEQ_LEN, HEAD_DIM // 2) = (SEQ_LEN, 1) * (1, HEAD_DIM // 2)
         angles = positions[:, None] * freqs[None, :]
 
-        # Shape: (CONTEXT_SIZE, HEAD_DIM // 2)
+        # Shape: (SEQ_LEN, HEAD_DIM // 2)
         # Register buffers are automatically moved to another device when the model is moved to another device
         self.register_buffer("cos_table", torch.cos(angles))
         self.register_buffer("sin_table", torch.sin(angles))
@@ -33,12 +33,15 @@ class ROPEAttnHead(nn.Module):
         """
         b_size, seq_len, _ = x.shape
 
-        # Shape: (BATCH_SIZE, CONTEXT_SIZE, HEAD_DIM)
+        cos_table_seq_length = self.cos_table[:seq_len]
+        sin_table_seq_length = self.sin_table[:seq_len]
+
+        # Shape: (BATCH_SIZE, SEQ_LEN, HEAD_DIM)
         Q = self.Wq(x)
         K = self.Wk(x)
 
         # Reshaping Q and K to meet the shape of the cos and sin tables
-        # Shape: (BATCH_SIZE, CONTEXT_SIZE, HEAD_DIM // 2, 2) - form pairs throughout HEAD_DIM
+        # Shape: (BATCH_SIZE, SEQ_LEN, HEAD_DIM // 2, 2) - form pairs throughout HEAD_DIM
         Q_reshaped = Q.view(b_size, seq_len, HEAD_DIM // 2, 2)
         K_reshaped = K.view(b_size, seq_len, HEAD_DIM // 2, 2)
 
@@ -61,8 +64,8 @@ class ROPEAttnHead(nn.Module):
         )
 
         # RoPE implementation
-        Q_RoPE = Q_reshaped * self.cos_table + Q_rotated * self.sin_table
-        K_RoPE = K_reshaped * self.cos_table + K_rotated * self.sin_table
+        Q_RoPE = Q_reshaped * cos_table_seq_length + Q_rotated * sin_table_seq_length
+        K_RoPE = K_reshaped * cos_table_seq_length + K_rotated * sin_table_seq_length
 
         # Reshape back to the original shape
         Q = Q_RoPE.view(b_size, seq_len, HEAD_DIM)
